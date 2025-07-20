@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>কেমিস্ট্রি ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "কোনটি RMS বেগ সম্পর্কিত?",
+          options: {
+            A: "c = √(3RT/M)",
+            B: "c = √(RT/M)",
+            C: "c = √(8RT/M)",
+            D: "c = √(2RT/M)",
+          },
+          correct: "A",
+          explanation:
+            "<p>গ্যাসের অণুসমূহের RMS (Root Mean Square) বেগ (c) নির্ণয়ের সমীকরণটি হলো c = √(3RT/M) , যেখানে R হলো আদর্শ গ্যাস ধ্রুবক, T হলো পরম তাপমাত্রা, এবং M হলো গ্যাসের আণবিক ভর। এটি গ্যাসের গতিতত্ত্ব থেকে প্রাপ্ত একটি গুরুত্বপূর্ণ সমীকরণ।</p>",
+        },
+        {
+          id: 2,
+          question: "এক মোল গ্যাসের গতিশক্তি সমীকরণ কোনটি?",
+          options: {
+            A: "3RT/2N<sub>A</sub>",
+            B: "3nRT/2",
+            C: "3RT/2",
+            D: "3nR/2",
+          },
+          correct: "C",
+          explanation:
+            "<p>গ্যাসের গতিতত্ত্ব অনুযায়ী, এক মোল আদর্শ গ্যাসের মোট গতিশক্তি হলো E<sub>k</sub> = (3/2)RT, যেখানে R হলো আদর্শ গ্যাস ধ্রুবক এবং T হলো পরম তাপমাত্রা। এটি গ্যাসের অণুগুলির এলোমেলো গতির কারণে প্রাপ্ত মোট শক্তিকে নির্দেশ করে।</p>",
+        },
+        {
+          id: 3,
+          question: "আদর্শ গ্যাসের গতীয় সমীকরণ কোনটি?",
+          options: {
+            A: "PV = nRT",
+            B: "PV = 1/3 mNc²",
+            C: "PV = RT",
+            D: "PV = P<sub>1</sub>V<sub>1</sub>",
+          },
+          correct: "B",
+          explanation:
+            "<p>আদর্শ গ্যাসের গতীয় সমীকরণ হলো PV = (1/3) mNc<sup>2</sup>, যেখানে P হলো চাপ, V হলো আয়তন, m হলো প্রতিটি অণুর ভর, N হলো অণুর সংখ্যা, এবং c হলো অণুগুলির গড় বর্গমূল বেগ (RMS বেগ)। এটি গ্যাসের চাপকে অণুগুলির সংঘর্ষের মাধ্যমে ব্যাখ্যা করে।</p>",
+        },
+        {
+          id: 4,
+          question: "27°C তাপমাত্রায় কোন গ্যাসটির RMS গতিবেগ বেশি?",
+          options: {
+            A: "N₂",
+            B: "H₂",
+            C: "O₂",
+            D: "Cl₂",
+          },
+          correct: "B",
+          explanation:
+            "<p><p>RMS গতিবেগ (<math><mi>c</mi><mo>=</mo><msqrt><mfrac><mrow><mn>3</mn><mi>R</mi><mi>T</mi></mrow><mi>M</mi></mfrac></msqrt></math>) আণবিক ভরের (M) বর্গমূলের ব্যস্তানুপাতিক। অর্থাৎ, যে গ্যাসের আণবিক ভর যত কম, তার RMS গতিবেগ তত বেশি হবে।</p> <ul><li>N₂ (নাইট্রোজেন): আণবিক ভর = ২৮ গ্রাম/মোল।</li><li>H₂ (হাইড্রোজেন): আণবিক ভর = ২ গ্রাম/মোল।</li><li>O₂ (অক্সিজেন): আণবিক ভর = ৩২ গ্রাম/মোল।</li><li>Cl₂ (ক্লোরিন): আণবিক ভর = ৭০.৯০ গ্রাম/মোল।</li></ul><p>এই গ্যাসগুলির মধ্যে হাইড্রোজেন (H₂) এর আণবিক ভর সবচেয়ে কম (২ গ্রাম/মোল), তাই ২৭°C তাপমাত্রায় এর RMS গতিবেগ সবচেয়ে বেশি হবে।</p>",
+        },
+        {
+          id: 5,
+          question: "স্থির তাপমাত্রায় RMS বেগের সঠিক ক্রম কোনটি?",
+          options: {
+            A: "H₂ > N₂ > CO₂",
+            B: "CO₂ > N₂ > H₂",
+            C: "N₂ > CO₂ > H₂",
+            D: "N₂ > H₂ > CO₂",
+          },
+          correct: "A",
+          explanation:
+            "<p>RMS বেগ আণবিক ভরের বর্গমূলের ব্যস্তানুপাতিক। অর্থাৎ, আণবিক ভর যত কম হবে, RMS বেগ তত বেশি হবে। গ্যাসগুলির আণবিক ভর হলো:</p><ul><li>H₂ (হাইড্রোজেন): ২ গ্রাম/মোল।</li><li>N₂ (নাইট্রোজেন): ২৮ গ্রাম/মোল।</li><li>CO₂ (কার্বন ডাই অক্সাইড): ৪৪ গ্রাম/মোল।</li></ul><p>আণবিক ভরের ক্রম: H₂ (২) < N₂ (২৮) < CO₂ (৪৪)।</p><p>সুতরাং, RMS বেগের ক্রম হবে: H₂ > N₂ > CO₂।</p>",
+        },
+        {
+          id: 6,
+          question: "গ্যাসের গতিশক্তি নির্ভর করে কোনটির উপর?",
+          options: {
+            A: "চাপ ও আয়তনের উপর",
+            B: "তাপমাত্রা ও গ্যাসের প্রকৃতির উপর",
+            C: "চাপ ও তাপমাত্রার উপর",
+            D: "গ্যাসের প্রকৃতি ও ঘনত্বের উপর",
+          },
+          correct: "C",
+          explanation:
+            "<p>আদর্শ গ্যাসের গতিশক্তি মূলত তাপমাত্রা এবং গ্যাসের অণুগুলোর প্রকৃতির (আণবিক ভর) উপর নির্ভর করে। তবে, যদি 'গতিশক্তি' বলতে গড় গতিশক্তি বোঝানো হয়, তবে এটি শুধুমাত্র তাপমাত্রার উপর নির্ভর করে (E<sub>k</sub> = (3/2)kT যেখানে k বোল্টজম্যান ধ্রুবক)। চাপ ও তাপমাত্রা (C) বিকল্পে রয়েছে। গ্যাসের গতিশক্তি তার চাপের ওপর সরাসরি নির্ভরশীল নয়, তবে তাপমাত্রা বাড়লে চাপ বাড়ে এবং গতিশক্তিও বাড়ে। বিকল্পের মধ্যে 'চাপ ও তাপমাত্রা' সবচেয়ে উপযুক্ত। আরও সুনির্দিষ্টভাবে বললে, গ্যাসের মোট গতিশক্তি মোল সংখ্যা ও তাপমাত্রার উপর নির্ভর করে (E<sub>k</sub> = (3/2)nRT), এবং গড় গতিশক্তি কেবল তাপমাত্রার উপর নির্ভর করে। যেহেতু 'গ্যাসের গতিশক্তি' বলা হয়েছে, এটি সাধারণত মোট গতিশক্তিকেই বোঝায়, যা পরোক্ষভাবে চাপের উপরও নির্ভরশীল (P ∝ T)।</p>",
+        },
+        {
+          id: 7,
+          question: "কোন তাপমাত্রায় একটি অণুর গতিশক্তি শূন্য হবে?",
+          options: {
+            A: "0°C",
+            B: "273°C",
+            C: "0K",
+            D: "298K",
+          },
+          correct: "C",
+          explanation:
+            "<p>গ্যাসের অণুগুলির গড় গতিশক্তি পরম তাপমাত্রার সমানুপাতিক (E<sub>k</sub> = (3/2)kT)। এই সম্পর্ক অনুযায়ী, যখন পরম তাপমাত্রা শূন্য (০ K) হয়, তখন গ্যাসের অণুগুলির গতিশক্তিও তাত্ত্বিকভাবে শূন্য হয়ে যায়। এই তাপমাত্রাকে পরমশূন্য তাপমাত্রা বলা হয়।</p>",
+        },
+        {
+          id: 8,
+          question:
+            "একটি আদর্শ গ্যাসের তাপমাত্রা T হতে বৃদ্ধি করে 2T করা হলে কোন রাশিটি দ্বিগুণ হবে?",
+          options: {
+            A: "অণুগুলোর গড় বর্গবেগের বর্গমূল",
+            B: "অণুগুলোর গড় বেগের বর্গ",
+            C: "অণুগুলোর গতিশক্তি",
+            D: "অণুগুলোর গড় বর্গবেগ",
+          },
+          correct: "C",
+          explanation:
+            "<p>আদর্শ গ্যাসের অণুগুলির গড় গতিশক্তি (E<sub>k</sub>) পরম তাপমাত্রার (T) সমানুপাতিক। অর্থাৎ, E<sub>k</sub> = (3/2)kT (প্রতি অণুর জন্য)। যদি তাপমাত্রা T থেকে 2T করা হয়, তাহলে গতিশক্তিও দ্বিগুণ হবে (E'<sub>k</sub> = (3/2)k(2T) = 2((3/2)kT) = 2E<sub>k</sub>)।</p><p>অন্যদিকে, গড় বর্গবেগের বর্গমূল বা RMS বেগ (c = √(3RT/M)) তাপমাত্রার বর্গমূলের সমানুপাতিক। তাই তাপমাত্রা দ্বিগুণ হলে RMS বেগ √2 গুণ হবে, দ্বিগুণ হবে না। গড় বর্গবেগ (c<sup>2</sup> = (3RT/M)) তাপমাত্রার সমানুপাতিক, তাই এটিও দ্বিগুণ হবে। কিন্তু প্রশ্নে 'অণুগুলোর গতিশক্তি' বলা হয়েছে, যা সরাসরি দ্বিগুণ হবে।</p>",
+        },
+        {
+          id: 9,
+          question: "চাপের বৃদ্ধির ফলে গ্যাসের অণুসমূহের গড় মুক্তবেগ-",
+          options: {
+            A: "হ্রাস পায়",
+            B: "বৃদ্ধি পায়",
+            C: "অপরিবর্তিত থাকে",
+            D: "শূন্য হয়",
+          },
+          correct: "B",
+          explanation:
+            "<p>এটি একটি ত্রুটিপূর্ণ প্রশ্ন, কারণ 'গড় মুক্তবেগ' (Mean Free Path) এবং 'গড় বেগ' বা 'RMS বেগ' (Root Mean Square velocity) ভিন্ন জিনিস।</p><ul><li><b>গড় মুক্তপথ (Mean Free Path):</b> অণুগুলো পরপর দুটি সংঘর্ষের মধ্যবর্তী সময়ে যে গড় দূরত্ব অতিক্রম করে। চাপ বাড়লে অণুগুলোর সংখ্যা ঘনত্ব বাড়ে, ফলে সংঘর্ষের হার বাড়ে এবং গড় মুক্তপথ <b>হ্রাস পায়</b>।</li><li><b>গড় বেগ বা RMS বেগ:</b> অণুগুলোর গতির সাথে সম্পর্কিত। স্থির তাপমাত্রায় গড় বেগ বা RMS বেগ <b>অপরিবর্তিত থাকে</b> (কারণ এটি শুধুমাত্র তাপমাত্রার উপর নির্ভর করে)। যদি চাপ বাড়ানোর ফলে তাপমাত্রা বৃদ্ধি পায় (অ্যাডায়াবেটিক সংকোচন), তবে গড় বেগ <b>বৃদ্ধি পেতে পারে</b>।</li></ul><p>প্রশ্নে &quot;গড় মুক্তবেগ&quot; উল্লেখ করা হয়েছে, যা প্রচলিত বৈজ্ঞানিক পরিভাষা নয়। যদি &quot;গড় মুক্তপথ&quot; বোঝানো হয়, তবে উত্তর (a) &quot;হ্রাস পায়&quot; হবে। যদি &quot;গড় বেগ&quot; বা &quot;RMS বেগ&quot; বোঝানো হয় এবং তাপমাত্রা স্থির রাখা হয়, তাহলে উত্তর (c) &quot;অপরিবর্তিত থাকে&quot; হবে। তবে, যদি চাপ বৃদ্ধির ফলে গ্যাসের তাপমাত্রা বৃদ্ধি পায় (যেমন, দ্রুত চাপানো), তবে গতিশক্তি বৃদ্ধি পেতে পারে। উত্তর B দেওয়া হয়েছে, যা সম্ভবত 'গড় বেগ' বা 'RMS বেগ' বোঝানো হচ্ছে এবং ধরে নেওয়া হচ্ছে চাপ বৃদ্ধির সাথে তাপমাত্রা বৃদ্ধি পাচ্ছে। তবে, আদর্শ গ্যাসের অণুর গড় গতিশক্তি শুধুমাত্র তাপমাত্রার উপর নির্ভর করে। যদি তাপমাত্রা স্থির থাকে, চাপ বাড়লেও গড় বেগ বা RMS বেগ অপরিবর্তিত থাকে। এই প্রশ্নটি বিতর্কিত।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "স্থির চাপে একটি আদর্শ গ্যাস অণুর বর্গমূল গড় বর্গবেগ গ্যাসের ঘনত্বের সাথে নিচের কোনরূপে পরিবর্তিত হয়?",
+          options: {
+            A: "∝ d",
+            B: "∝ 1/√d",
+            C: "∝ d²",
+            D: "∝ 1/d",
+          },
+          correct: "B",
+          explanation:
+            "<p>RMS বেগ (c = √(3RT/M))। আমরা জানি, ঘনত্ব d = (PM/RT)। এখান থেকে M = (dRT/P)।</p><p>RMS বেগের সমীকরণে M এর মান বসিয়ে পাই:</p><p>c = √(3RT/(dRT/P)) = √((3RT · P)/(dRT)) = √(3P/d)</p><p>যদি চাপ (P) স্থির থাকে, তাহলে c ∝ √(1/d) বা c ∝ 1/√d।</p><p>অর্থাৎ, RMS বেগ ঘনত্বের বর্গমূলের ব্যস্তানুপাতিক।</p>",
+        },
+        {
+          id: 11,
+          question:
+            "গ্যাসের গতিতত্ত্ব অনুসারে –273°C তাপমাত্রায় গ্যাসের গতিশক্তি হবে-",
+          options: {
+            A: "সর্বাধিক",
+            B: "শূন্য",
+            C: " মাঝামাঝি",
+            D: "কোনটিই নয়",
+          },
+          correct: "B",
+          explanation:
+            "<p>গ্যাসের গতিতত্ত্ব অনুযায়ী, গ্যাসের অণুগুলির গড় গতিশক্তি পরম তাপমাত্রার সমানুপাতিক। –২৭৩°C তাপমাত্রা হলো পরমশূন্য তাপমাত্রা (০ K)। এই তাপমাত্রায় অণুগুলির গতি সম্পূর্ণরূপে বন্ধ হয়ে যায়, এবং তাদের গতিশক্তি তাত্ত্বিকভাবে শূন্য হয়।</p>",
+        },
+        {
+          id: 12,
+          question: "কোনটির R.M.S বেগ সবচেয়ে কম?",
+          options: {
+            A: "Cl₂",
+            B: "N₂",
+            C: "CO₂",
+            D: "CH₄",
+          },
+          correct: "A",
+          explanation:
+            "<p>RMS বেগ (c = √(3RT/M)) আণবিক ভরের বর্গমূলের ব্যস্তানুপাতিক। যে গ্যাসের আণবিক ভর যত বেশি, তার RMS বেগ তত কম হবে।</p><ul><li>Cl<sub>2</sub> (ক্লোরিন): আণবিক ভর = ৭০.৯০ গ্রাম/মোল।</li><li>N<sub>2</sub> (নাইট্রোজেন): আণবিক ভর = ২৮ গ্রাম/মোল।</li><li>CO<sub>2</sub> (কার্বন ডাই অক্সাইড): আণবিক ভর = ৪৪ গ্রাম/মোল।</li><li>CH<sub>4</sub> (মিথেন): আণবিক ভর = ১৬ গ্রাম/মোল।</li></ul><p>এই গ্যাসগুলির মধ্যে ক্লোরিন (Cl<sub>2</sub>) এর আণবিক ভর সবচেয়ে বেশি (৭০.৯০ গ্রাম/মোল), তাই এর RMS বেগ সবচেয়ে কম হবে।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                        <label class="option" data-option="${option}">
+                                          <div class="circle">${option}</div>
+                                          <span class="option-text">${question.options[option]}</span>
+                                        </label>
+                                      `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                           <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                           <div class="explanation-content">
+                                             <div class="explanation-label">ব্যাখ্যা:</div>
+                                             ${question.explanation}
+                                           </div>
+                                         </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                      <p class="question-label">${index + 1}. ${
+            question.question
+          }</p>
+                                      <div class="options">
+                                        ${optionsHTML}
+                                      </div>
+                                      ${explanationHTML}
+                                    `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
